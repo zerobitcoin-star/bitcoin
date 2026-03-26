@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0b0f">
+<title>₿ BTC Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:#0b0b0f;color:#fff;font-family:'Space Grotesk','Noto Sans KR',sans-serif;min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{width:0;height:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.mono{font-family:'JetBrains Mono',monospace}
+.wrap{max-width:460px;margin:0 auto;padding:14px 14px 88px}
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:linear-gradient(to top,#0b0b0f 70%,#0b0b0f00);padding:6px 14px 12px;display:flex;justify-content:center}
+.nav-inner{display:flex;gap:2px;background:#131318;border-radius:16px;padding:3px;max-width:460px;width:100%;border:1px solid #1e1e28}
+.nav-btn{flex:1;border:none;border-radius:14px;padding:8px 4px;cursor:pointer;background:transparent;color:#4a4a55;font-size:10px;font-weight:500;font-family:'Space Grotesk',sans-serif;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav-btn.active{background:#f7931a12;color:#f7931a}
+.nav-btn .ico{font-size:17px;line-height:1}
+.card{background:#131318;border:1px solid #1e1e28;border-radius:14px;padding:18px;margin-bottom:12px;animation:fadeUp .35s ease}
+.card-sm{padding:14px 16px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:11px;color:#5a5a65;font-weight:500;letter-spacing:.3px}
+.val-xl{font-size:38px;font-weight:700;letter-spacing:-2px;line-height:1;margin-top:6px}
+.val-lg{font-size:22px;font-weight:700;letter-spacing:-1px}
+.val-md{font-size:16px;font-weight:600;letter-spacing:-.5px}
+.change-pill{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:8px;font-size:12px;font-weight:600;margin-top:8px}
+.up-pill{background:#00e67615;color:#00e676}
+.dn-pill{background:#ff525215;color:#ff5252}
+.pbar-wrap{margin-bottom:10px}
+.pbar-head{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
+.pbar-track{background:#1a1a24;border-radius:6px;height:6px;overflow:hidden}
+.pbar-fill{height:100%;border-radius:6px;transition:width .8s ease}
+.range-bar{position:relative;height:6px;border-radius:6px;margin:14px 0 8px}
+.range-fill{position:absolute;height:100%;border-radius:6px}
+.range-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;transform:translate(-50%,-50%);border:2px solid #0b0b0f}
+.section-title{font-size:15px;font-weight:600;margin-bottom:12px}
+.loader{display:flex;align-items:center;gap:6px;color:#f7931a;font-size:12px;padding:8px 0}
+.loader-spin{width:14px;height:14px;border:2px solid #f7931a33;border-top-color:#f7931a;border-radius:50%;animation:spin .8s linear infinite}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.live-dot{width:6px;height:6px;border-radius:50%;background:#00e676;animation:pulse 2s infinite}
+.tf-btn{border:none;border-radius:8px;padding:6px 14px;cursor:pointer;background:transparent;color:#4a4a55;font-size:12px;font-family:'Space Grotesk',sans-serif;font-weight:600;transition:all .2s}
+.tf-btn.active{background:#f7931a;color:#000}
+.btc-wm{position:absolute;right:-10px;top:50%;transform:translateY(-50%);font-size:120px;font-weight:800;color:#ffffff06;pointer-events:none;font-family:'JetBrains Mono',monospace;line-height:1}
+.blocks-scroll{display:flex;gap:8px;overflow-x:auto;padding:4px 0 8px;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch}
+.blocks-scroll::-webkit-scrollbar{display:none}
+.b3d{flex-shrink:0;width:120px;scroll-snap-align:start}
+.b3d-inner{position:relative;width:120px;height:130px}
+.b3d-front{position:absolute;left:6px;top:18px;width:108px;height:106px;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:2}
+.b3d-top{position:absolute;left:6px;top:0;width:108px;height:24px;border-radius:4px 4px 0 0;transform:skewX(-25deg);transform-origin:bottom left;z-index:1}
+.b3d-side{position:absolute;right:0;top:18px;width:14px;height:106px;border-radius:0 4px 4px 0;transform:skewY(-25deg);transform-origin:top left;z-index:1}
+.fees-row{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0;border:1px solid #1e1e28;border-radius:10px;overflow:hidden;margin-bottom:12px}
+.fee-cell{padding:12px 6px;text-align:center;border-right:1px solid #1e1e28}
+.fee-cell:last-child{border-right:none}
+.fc-lbl{font-size:9px;color:#5a5a65;font-weight:500;margin-bottom:6px}
+.fc-val{font-size:18px;font-weight:700;letter-spacing:-1px}
+.fc-unit{font-size:9px;color:#4a4a55;margin-top:2px}
+.chart-wrap{position:relative;touch-action:none}
+.chart-price-bar{display:flex;justify-content:space-between;align-items:baseline;min-height:28px;margin-bottom:4px}
+.chart-price-val{font-size:22px;font-weight:700;letter-spacing:-1px;color:#f7931a;font-family:'JetBrains Mono',monospace;opacity:0;transition:opacity .15s}
+.chart-price-val.show{opacity:1}
+.chart-price-lbl{font-size:10px;color:#5a5a65}
+.chart-tip{position:absolute;top:-2px;padding:3px 7px;border-radius:5px;background:#f7931a;color:#000;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none;transform:translateX(-50%);white-space:nowrap;z-index:5;opacity:0;transition:opacity .12s}
+.chart-tip.show{opacity:1}
+.chart-vl{position:absolute;top:0;bottom:0;width:1px;background:#f7931a55;pointer-events:none;z-index:4;opacity:0;transition:opacity .12s}
+.chart-vl.show{opacity:1}
+.chart-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:#f7931a;border:2px solid #0b0b0f;pointer-events:none;z-index:6;transform:translate(-50%,-50%);opacity:0;transition:opacity .12s}
+.chart-dot.show{opacity:1}
+.chart-hi{position:absolute;padding:2px 6px;border-radius:4px;background:#00e67622;color:#00e676;font-size:9px;font-weight:700;font-family:'JetBrains Mono',monospace;pointer-events:none;z-index:3;white-space:nowrap}
+.halving-donut{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.donut-info{flex:1;min-width:140px}
+.dr{margin-bottom:12px}
+.dr .dr-l{font-size:10px;color:#5a5a65;font-weight:500}
+.dr .dr-v{font-size:18px;font-weight:700;letter-spacing:-.5px;margin-top:2px}
+.tl-line{position:absolute;left:5px;top:4px;bottom:4px;width:2px;background:linear-gradient(to bottom,#f7931a,#f7931a22)}
+.tl-dot{position:absolute;left:-1px;top:4px;width:10px;height:10px;border-radius:50%}
+.tl-item{position:relative;padding-left:22px;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#f7931a,#e8820e);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;box-shadow:0 4px 20px #f7931a2a">₿</div>
+      <div><div style="font-size:18px;font-weight:700;letter-spacing:-.3px">Bitcoin</div><div style="font-size:11px;color:#4a4a55;font-weight:500">BTC / USD</div></div>
+    </div>
+    <div onclick="fetchAll()" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border:1px solid #1e1e28;border-radius:10px;cursor:pointer">
+      <div class="live-dot"></div><span style="font-size:12px;color:#5a5a65;font-weight:600;letter-spacing:.5px">LIVE</span>
+    </div>
+  </div>
+  <div id="page-price"></div>
+  <div id="page-mining" style="display:none"></div>
+  <div id="page-fees" style="display:none"></div>
+</div>
+<div class="nav"><div class="nav-inner">
+  <button class="nav-btn active" data-page="price" onclick="sp('price')"><span class="ico">📊</span>시세</button>
+  <button class="nav-btn" data-page="mining" onclick="sp('mining')"><span class="ico">⛏️</span>채굴</button>
+  <button class="nav-btn" data-page="fees" onclick="sp('fees')"><span class="ico">⚡</span>수수료</button>
+</div></div>
+<script>
+let D={},cp='price',ctf='7d';
+const PC={'Foundry USA':'#f7931a','AntPool':'#e74c3c','F2Pool':'#3498db','ViaBTC':'#2ecc71','Binance Pool':'#f0b90b','MARA Pool':'#9b59b6','Luxor':'#1abc9c','Braiins Pool':'#e67e22','SpiderPool':'#d35400','SBI Crypto':'#c0392b','OCEAN':'#16a085','Titan':'#8e44ad','SECPOOL':'#ff9800','Poolin':'#607d8b','BTC.com':'#455a64','Unknown':'#555'};
+function pcl(n){return PC[n]||`hsl(${(n.charCodeAt(0)*47+n.length*17)%360},50%,45%)`}
+function fmt(n,d){if(n==null||isNaN(n))return'—';d=d??0;return Number(n).toLocaleString(undefined,{minimumFractionDigits:d,maximumFractionDigits:d})}
+function fH(n){if(n>=1e18)return(n/1e18).toFixed(2)+' EH/s';if(n>=1e15)return(n/1e15).toFixed(2)+' PH/s';return(n/1e12).toFixed(2)+' TH/s'}
+function ago(ts){const s=Math.floor(Date.now()/1000-ts);if(s<60)return s+'초 전';if(s<3600)return Math.floor(s/60)+'분 전';if(s<86400)return Math.floor(s/3600)+'시간 전';return Math.floor(s/86400)+'일 전'}
+function ld(){return'<div class="loader"><div class="loader-spin"></div>로딩 중...</div>'}
+
+const TF={'1d':{i:'1h',l:24},'7d':{i:'4h',l:42},'30d':{i:'1d',l:30},'90d':{i:'1d',l:90}};
+async function fj(u){try{const r=await fetch(u);if(!r.ok)throw 0;return await r.json()}catch(e){return null}}
+
+async function fetchAll(){
+  const [binance,upbit,fees,blocks,diff,hash,mempool,cgGlobal]=await Promise.all([
+    fj('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT'),
+    fj('https://api.upbit.com/v1/ticker?markets=KRW-BTC'),
+    // ★ PRECISE endpoint — 소수점 수수료 반환 (0.2, 0.8 등)
+    fj('https://mempool.space/api/v1/fees/precise'),
+    fj('https://mempool.space/api/v1/blocks'),
+    fj('https://mempool.space/api/v1/difficulty-adjustment'),
+    fj('https://mempool.space/api/v1/mining/hashrate/1m'),
+    fj('https://mempool.space/api/mempool'),
+    // ★ CoinGecko: BTC 도미넌스 + 시가총액
+    fj('https://api.coingecko.com/api/v3/global'),
+  ]);
+  Object.assign(D,{binance,upbit,fees,blocks,diff,hash,mempool,cgGlobal});
+
+  // ★ 환율: 실시간 USD/KRW
+  // 1차: open.er-api.com (실제 외환시장 환율, CORS 지원, 무료)
+  D.exRate=null;
+  try{
+    const fx=await fj('https://open.er-api.com/v6/latest/USD');
+    if(fx?.rates?.KRW) D.exRate=fx.rates.KRW.toFixed(2);
+  }catch(e){}
+  // 2차: fawazahmed0 exchange-api (CDN, 무료, CORS 지원)
+  if(!D.exRate){
+    try{
+      const fx2=await fj('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json');
+      if(fx2?.usd?.krw) D.exRate=fx2.usd.krw.toFixed(2);
+    }catch(e){}
+  }
+  // 3차: BTC 가격 역산 (업비트÷바이낸스, 김프 포함 오차 가능)
+  if(!D.exRate){
+    const pU=binance?+binance.lastPrice:null;
+    const pK=upbit?.[0]?.trade_price;
+    if(pU&&pK&&pU>0) D.exRate=(pK/pU).toFixed(2);
+  }
+
+  await fetchKlines();
+  render();
+}
+
+async function fetchKlines(){
+  const t=TF[ctf];
+  D.klines=await fj(`https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=${t.i}&limit=${t.l}`);
+}
+
+function sp(p){
+  cp=p;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===p));
+  ['price','mining','fees'].forEach(id=>{document.getElementById('page-'+id).style.display=id===p?'block':'none'});
+  render();
+}
+function render(){({price:rP,mining:rM,fees:rF})[cp]?.()}
+function pb(v,mx,c,l,s){const p=Math.min(v/mx*100,100);return`<div class="pbar-wrap"><div class="pbar-head"><span style="color:#5a5a65">${l}</span><span class="mono" style="color:${c}">${s}</span></div><div class="pbar-track"><div class="pbar-fill" style="width:${p}%;background:linear-gradient(90deg,${c}88,${c})"></div></div></div>`}
+
+async function cTF(tf){ctf=tf;document.querySelectorAll('.tf-btn').forEach(b=>b.classList.toggle('active',b.dataset.tf===tf));await fetchKlines();rP()}
+
+// ═══ CHART ═══
+var _chartData={};
+function bC(data,w,h){
+  if(!data||data.length<2)return`<div style="height:${h}px"></div>`;
+  const pr=data.map(c=>+c[4]),mn=Math.min(...pr),mx=Math.max(...pr),rng=mx-mn||1;
+  const hi=pr.indexOf(mx);
+  const pts=pr.map((v,i)=>({x:(i/(pr.length-1))*w,y:h-((v-mn)/rng)*(h-20)-10}));
+  const poly=pts.map(p=>`${p.x},${p.y}`).join(' ');
+  const id='c'+Math.random().toString(36).slice(2,5);
+  const hx=pts[hi].x,hy=pts[hi].y;
+  const hiLeft=Math.min(Math.max(hx/w*100,10),88);
+  const hiTop=Math.max(hy/h*100-16,1);
+  // Store data globally (innerHTML won't execute script tags)
+  _chartData[id]={prices:pr,pts:pts.map(p=>({x:p.x/w,y:p.y/h}))};
+  return`<div class="chart-wrap" id="${id}" style="height:${h+32}px">
+    <div class="chart-price-bar">
+      <div class="chart-price-val" id="pv${id}">—</div>
+      <div class="chart-price-lbl" id="pl${id}">차트를 터치하세요</div>
+    </div>
+    <div style="position:relative;height:${h}px"
+      ontouchmove="cM(event,'${id}')" ontouchstart="cM(event,'${id}')" ontouchend="cE('${id}')"
+      onmousemove="cMM(event,'${id}')" onmouseleave="cE('${id}')">
+      <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
+        <defs><linearGradient id="g${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f7931a" stop-opacity=".18"/><stop offset="100%" stop-color="#f7931a" stop-opacity="0"/></linearGradient></defs>
+        <polygon points="0,${h} ${poly} ${w},${h}" fill="url(#g${id})"/>
+        <polyline points="${poly}" fill="none" stroke="#f7931a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${hx}" cy="${hy}" r="3.5" fill="#00e676" stroke="#0b0b0f" stroke-width="1.5"/>
+      </svg>
+      <div class="chart-hi" style="left:${hiLeft}%;top:${hiTop}%;transform:translate(-50%,-100%)">▲ $${fmt(mx)}</div>
+      <div class="chart-tip" id="t${id}"></div>
+      <div class="chart-vl" id="l${id}"></div>
+      <div class="chart-dot" id="dt${id}"></div>
+    </div>
+  </div>`;
+}
+window.cM=function(e,id){e.preventDefault();const el=document.getElementById(id);if(!el)return;const inner=el.querySelector('[ontouchmove]');if(!inner)return;const r=inner.getBoundingClientRect();sT(id,(e.touches[0].clientX-r.left)/r.width)};
+window.cMM=function(e,id){const el=document.getElementById(id);if(!el)return;const inner=el.querySelector('[onmousemove]');if(!inner)return;const r=inner.getBoundingClientRect();sT(id,(e.clientX-r.left)/r.width)};
+window.cE=function(id){
+  const t=document.getElementById('t'+id),l=document.getElementById('l'+id),dt=document.getElementById('dt'+id);
+  const pv=document.getElementById('pv'+id),pl=document.getElementById('pl'+id);
+  if(t)t.classList.remove('show');if(l)l.classList.remove('show');if(dt)dt.classList.remove('show');
+  if(pv){pv.classList.remove('show');pv.textContent='—'}
+  if(pl)pl.textContent='차트를 터치하세요';
+};
+function sT(id,x){
+  const cd=_chartData[id];
+  if(!cd)return;
+  const d=cd.prices,ptsList=cd.pts;
+  const i=Math.max(0,Math.min(d.length-1,Math.round(x*(d.length-1))));
+  const price=d[i];
+  const pt=ptsList[i];
+  const t=document.getElementById('t'+id),l=document.getElementById('l'+id),dt=document.getElementById('dt'+id);
+  if(t){t.textContent='$'+Number(price).toLocaleString(undefined,{maximumFractionDigits:0});t.style.left=(x*100)+'%';t.classList.add('show')}
+  if(l){l.style.left=(x*100)+'%';l.classList.add('show')}
+  if(dt&&pt){dt.style.left=(pt.x*100)+'%';dt.style.top=(pt.y*100)+'%';dt.classList.add('show')}
+  const pv=document.getElementById('pv'+id),pl=document.getElementById('pl'+id);
+  if(pv){pv.textContent='$'+Number(price).toLocaleString(undefined,{maximumFractionDigits:0});pv.classList.add('show')}
+  if(pl){pl.textContent=`${i+1} / ${d.length}`}
+}
+
+function donut(pct,sz){
+  sz=sz||150;const r=sz/2-10,cx=sz/2,cy=sz/2,c=2*Math.PI*r,f=c*pct/100;
+  return`<svg viewBox="0 0 ${sz} ${sz}" style="width:${sz}px;height:${sz}px;transform:rotate(-90deg)">
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2a35" stroke-width="14"/>
+    <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#f7931a" stroke-width="14" stroke-linecap="round" stroke-dasharray="${f} ${c-f}"/>
+    <text x="${cx}" y="${cy}" text-anchor="middle" dominant-baseline="central" fill="#fff" font-size="20" font-weight="700" font-family="'JetBrains Mono',monospace" transform="rotate(90 ${cx} ${cy})">${pct.toFixed(2)}%</text>
+  </svg>`;
+}
+
+function b3d(b){
+  const pn=b.extras?.pool?.name||'Unknown',c=pcl(pn),sz=b.size?(b.size/1e6).toFixed(2)+'MB':'?';
+  return`<div class="b3d"><div class="b3d-inner">
+    <div class="b3d-top" style="background:${c}aa"></div>
+    <div class="b3d-side" style="background:${c}66"></div>
+    <div class="b3d-front" style="background:${c}dd">
+      <div class="mono" style="font-size:13px;font-weight:700;color:#fff;letter-spacing:-.5px">${(b.height||0).toLocaleString()}</div>
+      <div class="mono" style="font-size:10px;color:#ffffffbb;margin-top:6px">${sz}</div>
+      <div style="font-size:10px;color:#ffffffdd;font-weight:600;margin-top:4px">${pn}</div>
+      <div class="mono" style="font-size:9px;color:#ffffff77;margin-top:4px">${ago(b.timestamp)}</div>
+    </div>
+  </div></div>`;
+}
+
+// ═══ PRICE ═══
+function rP(){
+  const b=D.binance,u=D.upbit?.[0],k=D.klines;
+  const pU=b?+b.lastPrice:null,ch=b?+b.priceChangePercent:null,chA=b?+b.priceChange:null;
+  const pK=u?.trade_price,chK=u?u.signed_change_rate*100:null;
+  const pr=k?k.map(c=>+c[4]):[],lo=pr.length?Math.min(...pr):null,hi=pr.length?Math.max(...pr):null;
+  const rp=pU&&hi&&lo&&(hi-lo)?((pU-lo)/(hi-lo)*100):50;
+  const tfl={'1d':'1일','7d':'7일','30d':'30일','90d':'90일'};
+  // 도미넌스
+  const dom=D.cgGlobal?.data?.market_cap_percentage?.btc;
+  // 김치프리미엄: (업비트원화가 - 바이낸스달러가*환율) / (바이낸스달러가*환율) * 100
+  let kimchi=null;
+  if(pU&&pK&&D.exRate){
+    const fairKRW=pU*(+D.exRate);
+    kimchi=((pK-fairKRW)/fairKRW*100);
+  }
+
+  document.getElementById('page-price').innerHTML=`
+  <div class="card" style="position:relative;overflow:hidden">
+    <div class="btc-wm">₿</div>
+    <div style="position:relative">
+      <div class="lbl">현재가 · USD</div>
+      ${pU?`<div class="val-xl mono">$${fmt(pU)}</div>
+        <div class="change-pill ${ch>=0?'up-pill':'dn-pill'} mono">${ch>=0?'▲':'▼'} ${chA>=0?'+':''}$${fmt(Math.abs(chA))} &nbsp;${ch>=0?'+':''}${ch.toFixed(2)}% &nbsp;24h</div>`:ld()}
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card card-sm">
+      <div class="lbl">원화 · KRW</div>
+      ${pK?`<div class="val-lg mono" style="margin-top:4px">₩${fmt(pK)}</div>
+        <span class="mono" style="font-size:11px;padding:2px 6px;border-radius:4px;${chK>=0?'background:#00e67615;color:#00e676':'background:#ff525215;color:#ff5252'}">${chK>=0?'+':''}${chK.toFixed(2)}%</span>`:ld()}
+    </div>
+    <div class="card card-sm">
+      <div class="lbl">USD/KRW 환율</div>
+      <div class="val-lg mono" style="color:#f7931a;margin-top:4px">₩${D.exRate?fmt(+D.exRate,2):'—'}</div>
+      <div style="font-size:10px;color:#3a3a45;margin-top:4px">실시간</div>
+    </div>
+  </div>
+  <div class="grid2">
+    <div class="card card-sm">
+      <div class="lbl">BTC 도미넌스</div>
+      <div class="val-lg mono" style="color:#f7931a;margin-top:4px">${dom!=null?dom.toFixed(1)+'%':'—'}</div>
+      <div style="font-size:10px;color:#3a3a45;margin-top:4px">전체 암호화폐 대비</div>
+    </div>
+    <div class="card card-sm">
+      <div class="lbl">김치 프리미엄</div>
+      ${kimchi!=null?`<div class="val-lg mono" style="color:${kimchi>=0?'#ff5252':'#3498db'};margin-top:4px">${kimchi>=0?'+':''}${kimchi.toFixed(2)}%</div>
+        <div style="font-size:10px;color:#3a3a45;margin-top:4px">업비트 vs 바이낸스</div>`:`<div class="val-lg mono" style="color:#5a5a65;margin-top:4px">—</div>`}
+    </div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <span style="font-size:14px;font-weight:600">가격 추이</span>
+      <div style="display:flex;gap:3px">${Object.entries(tfl).map(([k,v])=>`<button class="tf-btn${ctf===k?' active':''}" data-tf="${k}" onclick="cTF('${k}')">${v}</button>`).join('')}</div>
+    </div>
+    ${bC(k,320,140)}
+  </div>
+  <div class="card">
+    <div class="lbl" style="margin-bottom:4px">${tfl[ctf]} 가격 범위</div>
+    <div class="range-bar" style="background:#1a1a24">
+      <div class="range-fill" style="background:linear-gradient(90deg,#f7931a55,#f7931a);width:${rp}%;border-radius:6px"></div>
+      <div class="range-dot" style="left:${rp}%;background:#f7931a"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between">
+      <div><div style="font-size:9px;color:#3a3a45">저점</div><div class="mono" style="font-size:13px;color:#5a5a65;font-weight:600">$${fmt(lo)}</div></div>
+      <div style="text-align:center"><div style="font-size:9px;color:#f7931a;font-weight:600">현재</div><div class="mono" style="font-size:13px;color:#f7931a;font-weight:700">$${fmt(pU)}</div></div>
+      <div style="text-align:right"><div style="font-size:9px;color:#3a3a45">고점</div><div class="mono" style="font-size:13px;color:#5a5a65;font-weight:600">$${fmt(hi)}</div></div>
+    </div>
+  </div>`;
+}
+
+// ═══ MINING ═══
+function rM(){
+  const blks=D.blocks?.slice(0,10)||[];
+  const hr=D.hash?.currentHashrate,df=D.diff;
+  const curH=D.blocks?.[0]?.height||0,left=1050000-curH;
+  const prog=curH>840000?((curH-840000)/210000*100):0;
+  const estD=Math.ceil(left*10/60/24);
+  const estDate=new Date(Date.now()+estD*86400000);
+  const mined=210000*50+210000*25+210000*12.5+210000*6.25+Math.max(0,curH-840000)*3.125;
+
+  document.getElementById('page-mining').innerHTML=`
+  <div class="grid2">
+    <div class="card card-sm"><div class="lbl">네트워크 해시레이트</div><div class="mono val-md" style="color:#f7931a;margin-top:6px">${hr?fH(hr):'—'}</div></div>
+    <div class="card card-sm"><div class="lbl">난이도 조정</div>
+      ${df?`<div class="mono val-md" style="color:${df.difficultyChange>=0?'#00e676':'#ff5252'};margin-top:6px">${df.difficultyChange>=0?'+':''}${df.difficultyChange.toFixed(2)}%</div>
+        <div style="font-size:9px;color:#3a3a45;margin-top:3px">남은 ${df.remainingBlocks}블록</div>`:ld()}
+    </div>
+  </div>
+  <div class="card" style="padding:14px 10px">
+    <div class="section-title" style="padding:0 8px">⛏️ 최근 채굴 블록</div>
+    ${blks.length?`<div class="blocks-scroll">${blks.map(b=>b3d(b)).join('')}</div>`:ld()}
+  </div>
+  <div class="card">
+    <div class="section-title">반감기 현황</div>
+    <div class="halving-donut">
+      ${donut(prog,160)}
+      <div class="donut-info">
+        <div class="dr"><div class="dr-l">현재 블록 높이</div><div class="dr-v mono">${curH.toLocaleString()}</div></div>
+        <div class="dr"><div class="dr-l">남은 블록 높이</div><div class="dr-v mono">${left.toLocaleString()}</div></div>
+        <div class="dr"><div class="dr-l">다음 반감기 블록 높이</div><div class="dr-v mono">1,050,000</div></div>
+        <div class="dr"><div class="dr-l">다음 반감기 예상 날짜</div><div class="dr-v mono">${estDate.toISOString().slice(0,10).replace(/-/g,'.')}</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="card" style="cursor:pointer" onclick="this.querySelector('.hb').style.display=this.querySelector('.hb').style.display==='none'?'block':'none';this.querySelector('.ha').textContent=this.querySelector('.hb').style.display==='none'?'▾':'▴'">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:14px;font-weight:600">반감기 정보</span><span class="ha" style="color:#5a5a65;font-size:16px">▾</span>
+    </div>
+    <div class="hb" style="display:none;margin-top:14px">
+      <div style="position:relative;padding-left:18px"><div class="tl-line"></div>
+        ${[{d:'2009-01-03',b:0,r:50,l:'Genesis'},{d:'2012-11-28',b:210000,r:25,l:'1차'},{d:'2016-07-09',b:420000,r:12.5,l:'2차'},{d:'2020-05-11',b:630000,r:6.25,l:'3차'},{d:'2024-04-20',b:840000,r:3.125,l:'4차'},{d:estDate.toISOString().slice(0,10),b:1050000,r:1.5625,l:'5차 (예정)'}].map((it,i,a)=>{const last=i===a.length-1;return`<div class="tl-item"><div class="tl-dot" style="background:${last?'#f7931a':'#3a3a45'};${last?'box-shadow:0 0 10px #f7931a44':''}"></div><div style="display:flex;justify-content:space-between"><span style="color:${last?'#f7931a':'#888'};font-weight:${last?700:400};font-size:13px">${it.l}</span><span class="mono" style="color:#3a3a45;font-size:10px">${it.d}</span></div><div style="display:flex;justify-content:space-between;margin-top:2px"><span class="mono" style="color:#4a4a55;font-size:10px">#${it.b.toLocaleString()}</span><span class="mono" style="color:#f7931a;font-size:10px;font-weight:600">${it.r} BTC</span></div></div>`}).join('')}
+      </div>
+      <div style="margin-top:14px">${pb(mined,21000000,'#f7931a','채굴된 비트코인',`${Math.floor(mined).toLocaleString()} / 21,000,000 BTC`)}</div>
+    </div>
+  </div>
+  <div style="text-align:center;padding:16px 0;font-size:12px;color:#2a2a35;font-weight:500;letter-spacing:1px" class="mono">Don't Trust, Verify</div>`;
+}
+
+// ═══ FEES ═══
+function rF(){
+  const f=D.fees,m=D.mempool;
+  // ★ precise API는 소수점 반환 → 그대로 표시
+  const fv=k=>{
+    if(!f||f[k]==null)return'—';
+    const v=f[k];
+    // 정수면 정수로, 소수면 소수로 표시
+    return Number.isInteger(v)?v:v.toFixed(1);
+  };
+
+  document.getElementById('page-fees').innerHTML=`
+  <div class="section-title" style="padding:0 4px">트랜잭션 수수료</div>
+  ${f?`<div class="fees-row">
+    <div class="fee-cell"><div class="fc-lbl">최하위 순위</div><div class="fc-val mono" style="color:#4caf50">${fv('minimumFee')}</div><div class="fc-unit">sat/vB</div></div>
+    <div class="fee-cell"><div class="fc-lbl">낮은 우선 순위</div><div class="fc-val mono" style="color:#8bc34a">${fv('hourFee')}</div><div class="fc-unit">sat/vB</div></div>
+    <div class="fee-cell"><div class="fc-lbl">중간 우선 순위</div><div class="fc-val mono" style="color:#f7931a">${fv('halfHourFee')}</div><div class="fc-unit">sat/vB</div></div>
+    <div class="fee-cell"><div class="fc-lbl">높은 우선 순위</div><div class="fc-val mono" style="color:#ff5252">${fv('fastestFee')}</div><div class="fc-unit">sat/vB</div></div>
+  </div>`:ld()}
+  <div class="card">
+    <div class="section-title">📦 멤풀 현황</div>
+    ${m?`<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+      <div style="text-align:center"><div class="mono" style="font-size:20px;font-weight:700">${(m.count||0).toLocaleString()}</div><div style="font-size:9px;color:#4a4a55">미확인 TX</div></div>
+      <div style="text-align:center"><div class="mono" style="font-size:20px;font-weight:700;color:#f7931a">${m.vsize?(m.vsize/1e6).toFixed(1):'—'}</div><div style="font-size:9px;color:#4a4a55">MvB</div></div>
+      <div style="text-align:center"><div class="mono" style="font-size:20px;font-weight:700;color:#00e676">${m.total_fee?(m.total_fee/1e8).toFixed(3):'—'}</div><div style="font-size:9px;color:#4a4a55">BTC 수수료</div></div>
+    </div>
+    <div style="margin-top:14px">${pb(m.vsize||0,300000000,'#f7931a','멤풀 사용량',((m.vsize||0)/3e8*100).toFixed(1)+'%')}</div>`:ld()}
+  </div>
+  <div class="card">
+    <div style="font-size:11px;color:#5a5a65;margin-bottom:4px">💡 수수료 팁</div>
+    <div style="font-size:12px;line-height:1.7;color:#888">${f&&f.fastestFee<=3?'<span style="color:#00e676">네트워크가 한산합니다. 낮은 수수료로 빠른 확인이 가능합니다.</span>':f&&f.fastestFee<=15?'<span style="color:#f7931a">보통 수준입니다. 급하지 않다면 중간 우선순위를 추천합니다.</span>':f?'<span style="color:#ff5252">네트워크가 혼잡합니다. 급하지 않다면 기다리세요.</span>':'로딩 중...'}</div>
+  </div>`;
+}
+
+fetchAll();
+setInterval(fetchAll,30000);
+
+</script>
+</body>
+</html>
